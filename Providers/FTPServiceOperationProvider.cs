@@ -784,7 +784,7 @@ namespace Microsoft.Azure.Workflows.ServiceProvider.Extensions.FTP
                 catch (FtpCommandException ex)
                 {
                     HttpStatusCode code = GetStatusCode(ex.CompletionCode);
-                    ServiceOperationsProviderException resp = new ServiceOperationsProviderException(
+                    throw new ServiceOperationsProviderException(
                         httpStatus: code,
                         errorCode: ServiceOperationsErrorResponseCode.ServiceOperationFailed,
                         errorMessage: ex.Message + ", completion code: " + ex.CompletionCode,
@@ -794,7 +794,7 @@ namespace Microsoft.Azure.Workflows.ServiceProvider.Extensions.FTP
                 }
                 catch (Exception ex)
                 {
-                    ServiceOperationsProviderException resp = new ServiceOperationsProviderException(
+                    throw new ServiceOperationsProviderException(
                         httpStatus: HttpStatusCode.InternalServerError,
                         errorCode: ServiceOperationsErrorResponseCode.ServiceOperationFailed,
                         errorMessage: ex.Message,
