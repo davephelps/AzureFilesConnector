@@ -68,6 +68,8 @@ namespace Microsoft.Azure.Workflows.ServiceProvider.Extensions.FTP
         public const string ServiceOperationListFile = "FTPList";
         public const string ServiceOperationUploadFile = "FTPUploadFile";
         public const string ServiceOperationDeleteFile = "FTPDeleteFile";
+        public const string ServiceOperationCopyFileToBlob = "FTPCopyFileToBlob";
+
 
         /// <summary>
         /// The service id.
@@ -87,6 +89,7 @@ namespace Microsoft.Azure.Workflows.ServiceProvider.Extensions.FTP
         /// <summary>
         /// Constructor for Service operation provider.
         /// </summary>
+        
         public FTPServiceOperationProvider()
         {
             this.serviceOperationsList = new List<ServiceOperation>();
@@ -98,19 +101,21 @@ namespace Microsoft.Azure.Workflows.ServiceProvider.Extensions.FTP
                 { ServiceOperationGetFile,FTPGetFile() },
                 { ServiceOperationUploadFile,FTPUploadFile() },
                 { ServiceOperationDeleteFile,FTPDeleteFile() },
+                { ServiceOperationCopyFileToBlob,FTPCopyFileToBlob() },
 
-                
+
             });
-
+            
             this.serviceOperationsList.AddRange(new List<ServiceOperation>
             {
                                 { FTPListOperation().CloneWithManifest(FTPListOperationServiceOperationManifest()) },
                                 { FTPGetFile().CloneWithManifest(FTPGetOperationServiceOperationManifest()) },
                                 { FTPUploadFile().CloneWithManifest(FTPUploadOperationServiceOperationManifest()) },
-                                { FTPDeleteFile().CloneWithManifest(FTPDeleteOperationServiceOperationManifest()) }
+                                { FTPDeleteFile().CloneWithManifest(FTPDeleteOperationServiceOperationManifest()) },
+                                { FTPCopyFileToBlob().CloneWithManifest(FTPCopyFileToBlobOperationServiceOperationManifest()) }
 
 
-                
+
 
             });
         }
@@ -407,7 +412,84 @@ namespace Microsoft.Azure.Workflows.ServiceProvider.Extensions.FTP
             };
         }
 
-        
+
+
+        private ServiceOperationManifest FTPCopyFileToBlobOperationServiceOperationManifest()
+        {
+            return new ServiceOperationManifest
+            {
+                ConnectionReference = new ConnectionReferenceFormat
+                {
+                    ReferenceKeyFormat = ConnectionReferenceKeyFormat.ServiceProvider,
+                },
+                Settings = new OperationManifestSettings
+                {
+                    SecureData = new OperationManifestSettingWithOptions<SecureDataOptions>(),
+                    TrackedProperties = new OperationManifestSetting
+                    {
+                        Scopes = new OperationScope[] { OperationScope.Action },
+                    },
+                },
+                InputsLocation = new InputsLocation[]
+               {
+               InputsLocation.Inputs,
+               InputsLocation.Parameters,
+               },
+                Outputs = new SwaggerSchema
+                {
+                    Type = SwaggerSchemaType.Object,
+                    Properties = new OrdinalDictionary<SwaggerSchema>
+                    {
+                        { "body", new SwaggerSchema
+                            {
+                                Type = SwaggerSchemaType.String,
+                                Title = "Body",
+                                Description = "Body"
+                            }
+                        }
+                    }
+                },
+                Inputs = new SwaggerSchema
+                {
+                    Type = SwaggerSchemaType.Object,
+                    Properties = new OrdinalDictionary<SwaggerSchema>
+                    {
+                        {
+                            "inputParam", new SwaggerSchema
+                            {
+                                Type = SwaggerSchemaType.String,
+                                Title = "File path",
+                                Description = "Destination file path",
+                            }
+                        },
+                        {
+                            "storageconnectionstring", new SwaggerSchema
+                            {
+                                Type = SwaggerSchemaType.String,
+                                Title = "Storage Connection String",
+                                Description = "Storage Connection String",
+                            }
+                        },
+                        {
+                            "targetcontainer", new SwaggerSchema
+                            {
+                                Type = SwaggerSchemaType.String,
+                                Title = "Destination Container",
+                                Description = "Destination Container to copy file to",
+                            }
+                        }
+                    },
+                    Required = new string[]
+                   {
+                       "inputParam",
+                       "storageconnectionstring",
+                       "targetcontainer"
+                   },
+                },
+                Connector = this.GetServiceOperationApi(),
+            };
+        }
+
         private ServiceOperationManifest FTPDeleteOperationServiceOperationManifest()
         {
             return new ServiceOperationManifest
@@ -640,6 +722,28 @@ namespace Microsoft.Azure.Workflows.ServiceProvider.Extensions.FTP
         }
 
         
+        public ServiceOperation FTPCopyFileToBlob()
+        {
+            ServiceOperation Operation = new ServiceOperation
+            {
+                Name = ServiceOperationCopyFileToBlob,
+                Id = ServiceOperationCopyFileToBlob,
+                Type = ServiceOperationCopyFileToBlob,
+                Properties = new ServiceOperationProperties
+                {
+                    Api = this.GetServiceOperationApi().GetFlattenedApi(),
+                    Summary = "Copy File to Blob",
+                    Description = "Copy File to Blob",
+                    Visibility = Visibility.Important,
+                    //This is the magic setting that makes it an Action
+                    OperationType = OperationType.ServiceProvider,
+                    BrandColor = 0x1C3A56,
+                    IconUri = new Uri("https://dphrstorage.blob.core.windows.net/icons/FTP.png")
+                },
+            };
+            return (Operation);
+        }
+
         public ServiceOperation FTPDeleteFile()
         {
             ServiceOperation Operation = new ServiceOperation
@@ -726,7 +830,6 @@ namespace Microsoft.Azure.Workflows.ServiceProvider.Extensions.FTP
                     useBinaryMode = System.Convert.ToBoolean(GetBindingConnectionParameter(operationId, connectionParameters, "usebinarymode"));
 
                     FTPConfig ftpConfig = new FTPConfig(serverName, userName, password, useSSL, implicitMode, useSelfSignedCert, activeMode, useBinaryMode);
-
                     Connectors.FTPCore.FTP FTP = new Connectors.FTPCore.FTP(ftpConfig);
                     switch (operationId)
                     {
@@ -758,6 +861,34 @@ namespace Microsoft.Azure.Workflows.ServiceProvider.Extensions.FTP
                             var deleteOutput = FTP.FluentDeleteFile(path);
                             JProperty deleteProp = new JProperty("body", deleteOutput.Result);
                             resp = new ServiceOperationResponse(deleteProp.Value, System.Net.HttpStatusCode.OK);
+
+                            break;
+                            
+
+                        case ServiceOperationCopyFileToBlob:
+                            string storageConnectionString;
+                            var storageConn= serviceOperationRequest.Parameters.GetValueOrDefault("storageconnectionstring");
+
+                            if (storageConn== null)
+                            {
+                                throw new ApplicationException("Unable to read Storage Connection String");
+                            }
+                            storageConnectionString = storageConn.ToString();
+
+                            string targetContainer;
+                            var targetContainerParam = serviceOperationRequest.Parameters.GetValueOrDefault("targetcontainer");
+
+                            if (targetContainerParam == null)
+                            {
+                                throw new ApplicationException("Unable to read Target Container");
+                            }
+
+                            targetContainer = targetContainerParam.ToString();
+
+                            var copyFileOutput = FTP.FluentCopyFileToBlob(path, storageConnectionString, targetContainer);
+
+                            JProperty copyProp = new JProperty("body", copyFileOutput.Result);
+                            resp = new ServiceOperationResponse(copyProp.Value, System.Net.HttpStatusCode.OK);
 
                             break;
 

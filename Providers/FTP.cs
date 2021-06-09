@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
+using Azure.Storage.Blobs;
 using FluentFTP;
 using Microsoft.WindowsAzure.ResourceStack.Common.Json;
 using Newtonsoft.Json;
@@ -154,26 +155,68 @@ namespace Connectors.FTPCore
 
                 await client.ConnectAsync();
 
-                Stream responseStream = await client.OpenReadAsync(path);
-                if (_config.UseBinaryMode)
+                using (Stream responseStream = await client.OpenReadAsync(path))
                 {
-                    MemoryStream ms = new MemoryStream();
-                    client.DownloadDataType = FtpDataType.Binary;
-                    BinaryReader reader = new BinaryReader(responseStream);
-                    await responseStream.CopyToAsync(ms);
-                    ms.Position = 0;
-                    content = Convert.ToBase64String(ms.ToArray());
+                    if (_config.UseBinaryMode)
+                    {
+                        MemoryStream ms = new MemoryStream();
+                        client.DownloadDataType = FtpDataType.Binary;
+                        BinaryReader reader = new BinaryReader(responseStream);
+                        await responseStream.CopyToAsync(ms);
+                        ms.Position = 0;
+                        content = Convert.ToBase64String(ms.ToArray());
+                    }
+                    else
+                    {
+                        client.DownloadDataType = FtpDataType.ASCII;
+                        StreamReader reader = new StreamReader(responseStream);
+                        content = await reader.ReadToEndAsync();
+                    }
                 }
-                else
-                {
-                    client.DownloadDataType = FtpDataType.ASCII;
-                    StreamReader reader = new StreamReader(responseStream);
-                    content = await reader.ReadToEndAsync();
-                }
-
                 await client.DisconnectAsync();
             }
             catch 
+            {
+                throw;
+            }
+
+            return (content);
+
+        }
+
+        
+        public async Task<string> FluentCopyFileToBlob(string path, string storageConnectionString, string targetContainer)
+        {
+            string content = string.Empty;
+            string file = System.IO.Path.GetFileName(path);
+
+            try
+            {
+                FtpClient client = new FtpClient(_config.Host);
+                ConfigureClient(client);
+
+                await client.ConnectAsync();
+
+                using (Stream responseStream = await client.OpenReadAsync(path))
+                {
+                    BlobServiceClient blobServiceClient = new BlobServiceClient(storageConnectionString);
+                    
+                    BlobContainerClient containerClient = blobServiceClient.GetBlobContainerClient(targetContainer);
+                    if (_config.UseBinaryMode)
+                    {
+                        client.DownloadDataType = FtpDataType.Binary;
+                    }
+                    else
+                    {
+                        client.DownloadDataType = FtpDataType.ASCII;
+                    }
+                    BlobClient blobClient = containerClient.GetBlobClient(file);
+                    await blobClient.UploadAsync(responseStream, overwrite: true);
+
+                }
+                await client.DisconnectAsync();
+            }
+            catch
             {
                 throw;
             }

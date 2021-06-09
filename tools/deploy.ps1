@@ -19,7 +19,7 @@ catch
   write-host "func.exe not found"
 }
 
-dotnet add package "Microsoft.Azure.Workflows.ServiceProvider.Extensions.FTP" --version 0.10.1  --source $extensionPath
+dotnet add package "Microsoft.Azure.Workflows.ServiceProvider.Extensions.FTP" --version 0.10.8  --source $extensionPath
 
 write-host 'Full assembly '+ $fullAssemlyName
 $typeFullName =  "Microsoft.Azure.Workflows.ServiceProvider.Extensions.FTP.FTPStartup, $fullAssemlyName"
