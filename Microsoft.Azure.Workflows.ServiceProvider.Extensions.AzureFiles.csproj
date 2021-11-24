@@ -5,18 +5,15 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>..\..\sign.snk</AssemblyOriginatorKeyFile>
-    <AssemblyVersion>1.0.0.1</AssemblyVersion>
-    <Version>0.10.8</Version>
+    <AssemblyVersion>0.0.0.3</AssemblyVersion>
+    <Version>0.0.46</Version>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Providers\CoreFTP.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <PackageReference Include="Azure.Storage.Blobs" Version="12.9.0" />
-    <PackageReference Include="FluentFTP" Version="34.0.0" />
-    <PackageReference Include="Microsoft.Azure.Workflows.WebJobs.Extension" Version="1.1.2" />
-    <PackageReference Include="SSH.NET" Version="2020.0.1" />
+    <PackageReference Include="Azure.Storage.Files.Shares" Version="12.7.0" />
+    <PackageReference Include="Microsoft.ApplicationInsights" Version="2.14.0" />
+    <PackageReference Include="Microsoft.Azure.Workflows.WebJobs.Extension" Version="1.1.9" />
   </ItemGroup>
 
   <ItemGroup>

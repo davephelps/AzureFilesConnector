@@ -1,7 +1,7 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
-namespace Microsoft.Azure.Workflows.ServiceProvider.Extensions.FTP
+namespace Microsoft.Azure.Workflows.ServiceProvider.Extensions.AzureFiles
 {
     using System.Collections.Generic;
     using Microsoft.Azure.WebJobs.Description;
@@ -13,18 +13,18 @@ namespace Microsoft.Azure.Workflows.ServiceProvider.Extensions.FTP
     /// <summary>
     /// Service Provider class which injects all the service operation provider..
     /// </summary>
-    [Extension("FTPServiceProvider", configurationSection: "FTPServiceProvider")]
-    public class FTPServiceProvider : IExtensionConfigProvider
+    [Extension("AzureFilesServiceProvider", configurationSection: "AzureFilesServiceProvider")]
+    public class AzureFilesServiceProvider : IExtensionConfigProvider
     {
         /// <summary>
         /// Register the service provider.
         /// </summary>
         /// <param name="serviceOperationsProvider"></param>
         /// <param name="operationsProvider"></param>
-        public FTPServiceProvider(ServiceOperationsProvider serviceOperationsProvider,
-            FTPServiceOperationProvider operationsProvider)
+        public AzureFilesServiceProvider(ServiceOperationsProvider serviceOperationsProvider,
+            AzureFilesServiceOperationProvider operationsProvider)
         {
-            serviceOperationsProvider.RegisterService(serviceName: FTPServiceOperationProvider.ServiceName, serviceOperationsProviderId: FTPServiceOperationProvider.ServiceId, serviceOperationsProviderInstance: operationsProvider);
+            serviceOperationsProvider.RegisterService(serviceName: AzureFilesServiceOperationProvider.ServiceName, serviceOperationsProviderId: AzureFilesServiceOperationProvider.ServiceId, serviceOperationsProviderInstance: operationsProvider);
         }
 
         /// <summary>

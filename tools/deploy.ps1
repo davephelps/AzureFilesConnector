@@ -1,11 +1,11 @@
 ﻿$extensionPath=$args[0]
-$extensionName = "FTP"
+$extensionName = "AzureFiles"
 $extensionNameServiceProvider = $extensionName+"ServiceProvider"
 
 $userprofile = [environment]::GetFolderPath('USERPROFILE')
-$dll = $extensionPath+"\netcoreapp3.1\Microsoft.Azure.Workflows.ServiceProvider.Extensions.FTP.dll"
+$dll = $extensionPath+"\netcoreapp3.1\Microsoft.Azure.Workflows.ServiceProvider.Extensions.AzureFiles.dll"
 
-$extensionModulePath = Join-Path -Path $userprofile -ChildPath ".azure-functions-core-tools\Functions\ExtensionBundles\Microsoft.Azure.Functions.ExtensionBundle.Workflows\1.1.16\bin\extensions.json"
+$extensionModulePath = Join-Path -Path $userprofile -ChildPath ".azure-functions-core-tools\Functions\ExtensionBundles\Microsoft.Azure.Functions.ExtensionBundle.Workflows\1.1.26\bin\extensions.json"
 
 $fullAssemlyName = [System.Reflection.AssemblyName]::GetAssemblyName($dll).FullName
 write-host "Full assembly name " + $fullAssemlyName
@@ -19,10 +19,10 @@ catch
   write-host "func.exe not found"
 }
 
-dotnet add package "Microsoft.Azure.Workflows.ServiceProvider.Extensions.FTP" --version 0.10.8  --source $extensionPath
+dotnet add package "Microsoft.Azure.Workflows.ServiceProvider.Extensions.AzureFiles" --version 0.0.46  --source $extensionPath
 
 write-host 'Full assembly '+ $fullAssemlyName
-$typeFullName =  "Microsoft.Azure.Workflows.ServiceProvider.Extensions.FTP.FTPStartup, $fullAssemlyName"
+$typeFullName =  "Microsoft.Azure.Workflows.ServiceProvider.Extensions.AzureFiles.AzureFilesStartup, $fullAssemlyName"
 
 $newNode =  [pscustomobject] @{ 
   name = $extensionNameServiceProvider
